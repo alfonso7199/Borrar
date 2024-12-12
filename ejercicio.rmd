@@ -1,0 +1,47 @@
+---
+title: "Análisis Exploratorio de Datos: mtcars"
+author: "Tu Nombre"
+output: 
+  html_document:
+    toc: true          # Índice de contenido
+    toc_depth: 2       # Profundidad del índice (subtítulos hasta nivel 2)
+    theme: readable    # Tema de presentación (puedes cambiarlo a 'journal', 'cosmo', 'united', etc.)
+---
+
+# Introducción
+
+El propósito de este análisis es explorar el conjunto de datos `mtcars`, que contiene información sobre varios modelos de autos, y realizar un análisis exploratorio para identificar patrones y relaciones entre variables. En este informe, abordaremos lo siguiente:
+
+- Descripción general del conjunto de datos.
+- Visualización de relaciones clave entre las variables.
+- Análisis de distribuciones y correlaciones.
+
+# Análisis de Datos
+
+En esta sección, comenzaremos cargando el conjunto de datos `mtcars` y presentando un resumen de las primeras filas.
+
+## Resumen de Datos
+
+Primero, mostramos una tabla con las primeras filas del conjunto de datos `mtcars` utilizando la función `kable` para una visualización estática.
+
+```{r}
+# Cargar librerías necesarias
+library(knitr)
+library(DT)
+
+# Mostrar las primeras filas con kable
+kable(head(mtcars), caption = "Primeras filas del conjunto de datos mtcars")
+
+# Mostrar la tabla interactiva con DT
+datatable(mtcars, caption = "Tabla interactiva de mtcars")
+
+# Cargar librería para gráficos
+library(ggplot2)
+
+# Crear un gráfico de dispersión
+ggplot(mtcars, aes(x = hp, y = mpg)) +
+  geom_point() +
+  labs(title = "Relación entre Caballos de Fuerza (hp) y Millas por Galón (mpg)",
+       x = "Caballos de Fuerza (hp)", y = "Millas por Galón (mpg)") +
+  theme_minimal()
+
