@@ -1,65 +1,95 @@
-# Función para leer el archivo y devolver un vector de números
-leer_numeros <- function(nombre_archivo) {
-  if (!file.exists(nombre_archivo)) {
-    stop("El archivo no existe. Por favor, verifica el nombre y la ubicación.")
-  }
-  numeros <- as.integer(readLines(nombre_archivo))
-  return(numeros)
-}
+# 1. Cargar las librerías y los datos
+if (!require(dplyr)) install.packages("dplyr")
+if (!require(tidyr)) install.packages("tidyr")
 
-# Función para calcular los estadísticos y manejar alta variabilidad
-calcular_estadisticos <- function(numeros) {
-  media <- mean(numeros)
-  mediana <- median(numeros)
-  desviacion <- sd(numeros)
-  
-  # Verificar si hay alta variabilidad
-  if (desviacion > 10) {
-    cat("Alta variabilidad detectada: la desviación estándar es mayor a 10.\n")
-  }
-  
-  return(list(media = media, mediana = mediana, desviacion = desviacion))
-}
+library(dplyr)
+library(tidyr)
 
-# Función para calcular el cuadrado de cada número usando sapply
-calcular_cuadrados <- function(numeros) {
-  cuadrados <- sapply(numeros, function(x) x^2)
-  return(cuadrados)
-}
+# Cargar el dataset mtcars y convertirlo en un dataframe
+data(mtcars)
+df <- as.data.frame(mtcars)
 
-# Función para guardar los resultados en un archivo
-guardar_resultados <- function(nombre_archivo, estadisticos, cuadrados) {
-  salida <- file(nombre_archivo, "w")
-  
-  # Escribir los estadísticos
-  cat("Resultados estadísticos:\n", file = salida)
-  cat("Media: ", estadisticos$media, "\n", file = salida)
-  cat("Mediana: ", estadisticos$mediana, "\n", file = salida)
-  cat("Desviación estándar: ", estadisticos$desviacion, "\n\n", file = salida)
-  
-  # Escribir los cuadrados de los números
-  cat("Cuadrados de los números:\n", file = salida)
-  cat(paste(cuadrados, collapse = ", "), "\n", file = salida)
-  
-  close(salida)
-}
+# Verificar el dataframe inicial
+print("Dataframe inicial:")
+print(df)
 
-# Función principal
-procesar_numeros <- function(nombre_entrada, nombre_salida) {
-  # Leer los números desde el archivo
-  numeros <- leer_numeros(nombre_entrada)
-  
-  # Calcular los estadísticos
-  estadisticos <- calcular_estadisticos(numeros)
-  
-  # Calcular los cuadrados de los números
-  cuadrados <- calcular_cuadrados(numeros)
-  
-  # Guardar los resultados en el archivo de salida
-  guardar_resultados(nombre_salida, estadisticos, cuadrados)
-  
-  cat("Procesamiento completado. Resultados guardados en", nombre_salida, "\n")
-}
+# 2. Selección de columnas y filtrado de filas
+df_filtered <- df %>%
+  select(mpg, cyl, hp, gear) %>%
+  filter(cyl > 4)
 
-# Ejecutar el script con los nombres de archivo adecuados
-procesar_numeros("numeros.txt", "resultados.txt")
+print("Dataframe después de selección y filtrado:")
+print(df_filtered)
+
+# 3. Ordenación y renombrado de columnas
+df_sorted <- df_filtered %>%
+  arrange(desc(hp)) %>%
+  rename(consumo = mpg, potencia = hp)
+
+print("Dataframe después de ordenación y renombrado:")
+print(df_sorted)
+
+# 4. Creación de nuevas columnas y agregación de datos
+df_with_eficiencia <- df_sorted %>%
+  mutate(eficiencia = consumo / potencia)
+
+df_aggregated <- df_with_eficiencia %>%
+  group_by(cyl) %>%
+  summarise(consumo_medio = mean(consumo, na.rm = TRUE),
+            potencia_maxima = max(potencia, na.rm = TRUE))
+
+print("Dataframe después de agregar la columna eficiencia:")
+print(df_with_eficiencia)
+
+print("Dataframe agrupado por cilindros:")
+print(df_aggregated)
+
+# 5. Creación del segundo dataframe y unión de dataframes
+df_gear <- data.frame(
+  gear = c(3, 4, 5),
+  tipo_transmision = c("Manual", "Automática", "Semiautomática")
+)
+
+df_joined <- df_with_eficiencia %>%
+  left_join(df_gear, by = "gear")
+
+print("Dataframe después del left_join:")
+print(df_joined)
+
+# 6. Transformación de formatos
+# Transformar a formato largo
+df_long <- df_joined %>%
+  pivot_longer(cols = c(consumo, potencia, eficiencia),
+               names_to = "medida",
+               values_to = "valor")
+
+print("Dataframe en formato largo:")
+print(df_long)
+
+# Identificar combinaciones duplicadas
+df_long_grouped <- df_long %>%
+  group_by(cyl, gear, tipo_transmision, medida) %>%
+  summarise(valor_medio = mean(valor, na.rm = TRUE), .groups = "drop")
+
+print("Dataframe con valores agrupados para eliminar duplicados:")
+print(df_long_grouped)
+
+# Transformar de nuevo a formato ancho
+df_wide <- df_long_grouped %>%
+  pivot_wider(names_from = medida, values_from = valor_medio)
+
+print("Dataframe en formato ancho final:")
+print(df_wide)
+
+# 7. Verificación
+print("Verificación final de todos los pasos completados:")
+print(list(
+  Selección_y_filtrado = df_filtered,
+  Ordenación_y_renombrado = df_sorted,
+  Con_eficiencia = df_with_eficiencia,
+  Agrupado = df_aggregated,
+  Unión = df_joined,
+  Largo = df_long,
+  Agrupado_para_eliminar_duplicados = df_long_grouped,
+  Ancho = df_wide
+))
