@@ -1,95 +1,48 @@
-# 1. Cargar las librerías y los datos
-if (!require(dplyr)) install.packages("dplyr")
-if (!require(tidyr)) install.packages("tidyr")
+# Cargar paquetes necesarios
+library(tseries) # Para la prueba de Dickey-Fuller
+library(ggplot2) # Para visualización
+library(forecast) # Para análisis de series temporales
 
-library(dplyr)
-library(tidyr)
+# 1. Cargar el dataset y explorar su estructura
+data("AirPassengers")
+print(class(AirPassengers))   # Verificar tipo de datos
+print(summary(AirPassengers)) # Resumen estadístico
+print(start(AirPassengers))   # Inicio de la serie
+print(end(AirPassengers))     # Fin de la serie
+print(frequency(AirPassengers)) # Frecuencia: 12 (mensual)
 
-# Cargar el dataset mtcars y convertirlo en un dataframe
-data(mtcars)
-df <- as.data.frame(mtcars)
+# 2. Exploración inicial
+plot(AirPassengers, main="Número de Pasajeros de Aerolíneas (1949-1960)",
+     ylab="Pasajeros (en miles)", xlab="Año", col="blue")
 
-# Verificar el dataframe inicial
-print("Dataframe inicial:")
-print(df)
+# Estadísticas descriptivas
+mean_value <- mean(AirPassengers)
+sd_value <- sd(AirPassengers)
+cat("Media:", mean_value, "\n")
+cat("Desviación estándar:", sd_value, "\n")
 
-# 2. Selección de columnas y filtrado de filas
-df_filtered <- df %>%
-  select(mpg, cyl, hp, gear) %>%
-  filter(cyl > 4)
+# 3. Descomposición de la serie temporal
+decomposed <- decompose(AirPassengers, type="multiplicative")
+plot(decomposed)
 
-print("Dataframe después de selección y filtrado:")
-print(df_filtered)
+# 4. Análisis de estacionariedad
+acf(AirPassengers, main="Autocorrelación de AirPassengers")
+pacf(AirPassengers, main="Autocorrelación Parcial de AirPassengers")
 
-# 3. Ordenación y renombrado de columnas
-df_sorted <- df_filtered %>%
-  arrange(desc(hp)) %>%
-  rename(consumo = mpg, potencia = hp)
+# Prueba de Dickey-Fuller para verificar estacionariedad
+adf_test <- adf.test(AirPassengers)
+print(adf_test)
 
-print("Dataframe después de ordenación y renombrado:")
-print(df_sorted)
+# Si la serie no es estacionaria, aplicamos diferenciación
+diff_series <- diff(AirPassengers, differences=1)
+plot(diff_series, main="Serie Diferenciada", col="red")
 
-# 4. Creación de nuevas columnas y agregación de datos
-df_with_eficiencia <- df_sorted %>%
-  mutate(eficiencia = consumo / potencia)
+# Volver a probar la estacionariedad tras diferenciación
+adf_test_diff <- adf.test(diff_series, na.action=na.omit)
+print(adf_test_diff)
 
-df_aggregated <- df_with_eficiencia %>%
-  group_by(cyl) %>%
-  summarise(consumo_medio = mean(consumo, na.rm = TRUE),
-            potencia_maxima = max(potencia, na.rm = TRUE))
+# 5. Detección de valores atípicos
+boxplot(AirPassengers, main="Boxplot de AirPassengers",
+        ylab="Pasajeros (en miles)", col="orange")
 
-print("Dataframe después de agregar la columna eficiencia:")
-print(df_with_eficiencia)
-
-print("Dataframe agrupado por cilindros:")
-print(df_aggregated)
-
-# 5. Creación del segundo dataframe y unión de dataframes
-df_gear <- data.frame(
-  gear = c(3, 4, 5),
-  tipo_transmision = c("Manual", "Automática", "Semiautomática")
-)
-
-df_joined <- df_with_eficiencia %>%
-  left_join(df_gear, by = "gear")
-
-print("Dataframe después del left_join:")
-print(df_joined)
-
-# 6. Transformación de formatos
-# Transformar a formato largo
-df_long <- df_joined %>%
-  pivot_longer(cols = c(consumo, potencia, eficiencia),
-               names_to = "medida",
-               values_to = "valor")
-
-print("Dataframe en formato largo:")
-print(df_long)
-
-# Identificar combinaciones duplicadas
-df_long_grouped <- df_long %>%
-  group_by(cyl, gear, tipo_transmision, medida) %>%
-  summarise(valor_medio = mean(valor, na.rm = TRUE), .groups = "drop")
-
-print("Dataframe con valores agrupados para eliminar duplicados:")
-print(df_long_grouped)
-
-# Transformar de nuevo a formato ancho
-df_wide <- df_long_grouped %>%
-  pivot_wider(names_from = medida, values_from = valor_medio)
-
-print("Dataframe en formato ancho final:")
-print(df_wide)
-
-# 7. Verificación
-print("Verificación final de todos los pasos completados:")
-print(list(
-  Selección_y_filtrado = df_filtered,
-  Ordenación_y_renombrado = df_sorted,
-  Con_eficiencia = df_with_eficiencia,
-  Agrupado = df_aggregated,
-  Unión = df_joined,
-  Largo = df_long,
-  Agrupado_para_eliminar_duplicados = df_long_grouped,
-  Ancho = df_wide
-))
+# 6. Interpretación de resultados (Se incluirá en el documento final .Rmd o comentarios en el código)
